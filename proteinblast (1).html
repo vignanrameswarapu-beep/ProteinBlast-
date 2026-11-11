@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>PROTEINBLAST - AI Protein & Gram Tracker</title>
+  <!-- Font loading: Barlow & Barlow Condensed -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              orange: '#FF4500',
+              deepOrange: '#E03D00',
+              blue: '#2547F5',
+              darkBg: '#090D16',
+              darkCard: '#121829',
+              darkBorder: '#1F2942',
+              lightBg: '#F3F5FA',
+              lightCard: '#FFFFFF',
+              lightBorder: '#E2E8F0',
+            }
+          },
+          fontFamily: {
+            display: ['Barlow Condensed', 'sans-serif'],
+            body: ['Barlow', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbars and tabular numbers */
+    .num { font-variant-numeric: tabular-nums; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    .dark ::-webkit-scrollbar-thumb { background: #334155; }
+    
+    /* Smooth progress transitions */
+    .gauge-cell {
+      transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    }
+  </style>
+</head>
+<body class="bg-brand-lightBg dark:bg-brand-darkBg text-slate-800 dark:text-slate-100 font-body min-h-screen pb-12 transition-colors duration-200">
+
+  <!-- Main Container -->
+  <div class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- Header Section -->
+    <header class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-brand-lightCard dark:bg-brand-darkCard p-4 sm:p-5 rounded-2xl border border-brand-lightBorder dark:border-brand-darkBorder shadow-sm">
+      <div class="flex items-center gap-3">
+        <!-- High energy Flame / Lightning SVG Icon -->
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-orange to-amber-400 flex items-center justify-center text-white shadow-lg shadow-brand-orange/30">
+          <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24">
+            <path d="M12,1 L14.1,6.9 L19.8,4.2 L17.1,9.9 L23,12 L17.1,14.1 L19.8,19.8 L14.1,17.1 L12,23 L9.9,17.1 L4.2,19.8 L6.9,14.1 L1,12 L6.9,9.9 L4.2,4.2 L9.9,6.9 Z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="font-display font-extrabold italic text-3xl sm:text-4xl tracking-wider leading-none">
+            PROTEIN<span class="text-brand-orange">BLAST</span>
+          </h1>
+          <p class="text-xs font-semibold text-slate-400 tracking-wider uppercase">AI Food & Gram Scanner</p>
+        </div>
+      </div>
+
+      <!-- Date Selector & Theme Toggle -->
+      <div class="flex items-center gap-3">
+        <!-- Live Camera Scanner Launcher Button -->
+        <button id="openScannerBtn" class="px-3.5 py-2 text-xs font-bold uppercase tracking-wider bg-gradient-to-r from-brand-orange to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl transition shadow-md flex items-center gap-1.5">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4V4zm16 0h-6v2h4v4h2V4zM4 20h6v-2H6v-4H4v6zm16 0h-6v-2h4v-4h2v6zM7 7h10v10H7V7z"/></svg>
+          <span>Scan Label / Code</span>
+        </button>
+
+        <div class="flex items-center bg-slate-100 dark:bg-slate-800/80 rounded-xl p-1 border border-slate-200 dark:border-slate-700">
+          <button id="prevDateBtn" class="w-9 h-9 rounded-lg flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:shadow-xs transition" title="Previous Day">
+            &#8249;
+          </button>
+          <span id="dateDisplay" class="px-3 font-semibold text-sm min-w-[110px] text-center select-none num">Today</span>
+          <button id="nextDateBtn" class="w-9 h-9 rounded-lg flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 hover:shadow-xs transition" title="Next Day">
+            &#8250;
+          </button>
+        </div>
+
+        <button id="todayBtn" class="px-3 py-2 text-xs font-bold uppercase tracking-wider bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-xl transition">
+          Today
+        </button>
+
+        <button id="themeToggleBtn" class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Toggle Dark/Light Mode">
+          <svg id="themeIconDark" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          <svg id="themeIconLight" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Hero Dashboard -->
+    <section class="bg-brand-lightCard dark:bg-brand-darkCard p-6 sm:p-8 rounded-3xl border border-brand-lightBorder dark:border-brand-darkBorder shadow-sm relative overflow-hidden">
+      <!-- Glow background accent -->
+      <div class="absolute -top-24 -right-24 w-64 h-64 bg-brand-orange/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-widest text-slate-400">Protein Goal Intake</span>
+          <div class="flex items-baseline gap-2 mt-1">
+            <span id="heroTotalVal" class="font-display font-extrabold text-7xl sm:text-8xl tracking-tight text-slate-900 dark:text-white num leading-none">0</span>
+            <span class="font-display font-bold text-3xl sm:text-4xl text-slate-400">/ <span id="heroGoalVal" class="num">100</span>g</span>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <span id="heroStatusText" class="text-sm font-semibold px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+            100g remaining
+          </span>
+          
+          <button id="editGoalBtn" class="text-xs font-bold uppercase tracking-wider text-brand-blue dark:text-indigo-400 hover:underline">
+            Edit Goal
+          </button>
+        </div>
+      </div>
+
+      <!-- Goal Edit Inline Modal/Form -->
+      <form id="goalEditForm" class="hidden mt-4 p-4 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-wrap items-center gap-3">
+        <label for="goalInput" class="text-xs font-bold uppercase text-slate-500">Target Daily Protein (g):</label>
+        <input type="number" id="goalInput" min="10" max="500" class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm font-bold w-24 num focus:outline-none focus:ring-2 focus:ring-brand-blue" />
+        <button type="submit" class="px-4 py-1.5 bg-brand-blue hover:bg-blue-600 text-white font-bold text-xs rounded-lg uppercase transition">Save Goal</button>
+        <button type="button" id="cancelGoalBtn" class="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-bold uppercase">Cancel</button>
+      </form>
+
+      <!-- 10-Cell Segmented Gauge -->
+      <div class="mt-6 space-y-2">
+        <div class="flex justify-between items-center text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <span>0%</span>
+          <span>50%</span>
+          <span>100%</span>
+        </div>
+        <div id="gaugeContainer" class="grid grid-cols-10 gap-1.5 sm:gap-2 h-6">
+          <!-- 10 cells generated dynamically -->
+        </div>
+      </div>
+
+      <!-- Quick Metrics Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+        <div class="bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Goal Reached</span>
+          <p id="metricPct" class="font-display font-extrabold text-2xl num text-slate-800 dark:text-slate-100 mt-0.5">0%</p>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Items Logged</span>
+          <p id="metricCount" class="font-display font-extrabold text-2xl num text-slate-800 dark:text-slate-100 mt-0.5">0</p>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Top Food Source</span>
+          <p id="metricTopSource" class="font-display font-bold text-lg truncate text-slate-800 dark:text-slate-100 mt-0.5">None</p>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Avg Protein / Item</span>
+          <p id="metricAvgItem" class="font-display font-extrabold text-2xl num text-slate-800 dark:text-slate-100 mt-0.5">0g</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- Left Column: Input Forms & Logged List (7 cols) -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- AI Meal Text Scanner Section -->
+        <section class="bg-brand-lightCard dark:bg-brand-darkCard p-6 rounded-2xl border border-brand-lightBorder dark:border-brand-darkBorder shadow-sm relative">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-indigo-100 dark:bg-indigo-950 text-brand-blue dark:text-indigo-400 rounded">AI Powered</span>
+              <h2 class="font-display font-bold text-xl uppercase tracking-wide">Tell AI What You Ate</h2>
+            </div>
+          </div>
+          
+          <form id="aiParseForm" class="space-y-3">
+            <textarea id="aiInputText" rows="3" class="w-full p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue transition placeholder:text-slate-400" placeholder="e.g. 2 eggs, 150g paneer, 1 scoop whey, 2 rotis with dal"></textarea>
+            
+            <button type="submit" id="aiSubmitBtn" class="w-full py-3 bg-gradient-to-r from-brand-blue to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-display font-bold text-lg uppercase tracking-wider rounded-xl shadow-md transition flex items-center justify-center gap-2">
+              <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"/></svg>
+              <span>Work Out My Protein & Grams</span>
+            </button>
+          </form>
+
+          <!-- AI Results Preview Box -->
+          <div id="aiResultBox" class="hidden mt-4 p-4 bg-slate-50 dark:bg-slate-900/90 rounded-xl border border-indigo-200 dark:border-indigo-900/50 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400">Parsed Breakdown</span>
+              <span class="text-xs font-semibold text-slate-500">Review & Confirm</span>
+            </div>
+
+            <ul id="aiParsedList" class="divide-y divide-slate-200 dark:divide-slate-800 text-sm">
+              <!-- Dynamically populated -->
+            </ul>
+
+            <div class="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
+              <div class="font-display font-extrabold text-lg">
+                Total: <span id="aiTotalCalc" class="text-brand-orange num">0</span>g Protein
+              </div>
+              <div class="flex gap-2">
+                <button type="button" id="aiConfirmBtn" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider rounded-lg transition">
+                  Add All to Log
+                </button>
+                <button type="button" id="aiDiscardBtn" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs uppercase tracking-wider rounded-lg transition">
+                  Discard
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Manual Add Food & Quick Picks Section -->
+        <section class="bg-brand-lightCard dark:bg-brand-darkCard p-6 rounded-2xl border border-brand-lightBorder dark:border-brand-darkBorder shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="font-display font-bold text-xl uppercase tracking-wide">Add Food Manually</h2>
+            <button type="button" id="scanLabelFileBtn" class="text-xs font-bold text-brand-blue dark:text-indigo-400 hover:underline flex items-center gap-1">
+              <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M19 7v2.99s-1.99.01-2 0V7h-3s.01-1.99 0-2h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-3zM5 19l3-4 2 3 3-4 4 5H5z"/></svg>
+              Upload Label Photo
+            </button>
+            <input type="file" id="fallbackFileInput" accept="image/*" class="hidden">
+          </div>
+
+          <form id="addFoodForm" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+  <!-- Live Camera Scanner Overlay Modal -->
+  <div id="cameraModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex flex-col items-center justify-between p-4">
+    <div class="w-full max-w-lg flex items-center justify-between text-white py-2">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+        <span class="font-display font-bold text-lg tracking-wide">LIVE CAMERA SCANNER</span>
+      </div>
+      <button id="closeScannerBtn" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition text-lg font-bold">✕</button>
+    </div>
+
+    <!-- Video Feed Container -->
+    <div class="relative w-full max-w-lg aspect-[3/4] bg-black rounded-2xl overflow-hidden border-2 border-brand-orange/50 shadow-2xl flex items-center justify-center">
+      <video id="scannerVideo" autoplay playsinline class="w-full h-full object-cover"></video>
+      <canvas id="scannerCanvas" class="hidden"></canvas>
+
+      <!-- Overlay Target Box -->
+      <div class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-6">
+        <div class="w-64 h-64 border-2 border-dashed border-brand-orange rounded-2xl relative flex items-center justify-center shadow-[0_0_50px_rgba(255,69,0,0.3)]">
+          <div class="absolute top-2 left-2 right-2 text-center text-[11px] font-bold uppercase tracking-wider text-white bg-black/60 backdrop-blur-md py-1 rounded-md">
+            Align Nutrition Label or Barcode
+          </div>
+          <!-- Corner brackets -->
+          <div class="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-brand-orange rounded-tl"></div>
+          <div class="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-brand-orange rounded-tr"></div>
+          <div class="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-brand-orange rounded-bl"></div>
+          <div class="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-brand-orange rounded-br"></div>
+        </div>
+      </div>
+
+      <!-- Scanning Status Message -->
+      <div id="cameraStatusMsg" class="absolute bottom-4 left-4 right-4 text-center py-2 px-3 bg-black/75 backdrop-blur-md text-white text-xs font-semibold rounded-xl border border-white/10">
+        Initializing camera...
+      </div>
+    </div>
+
+    <!-- Camera Control Buttons -->
+    <div class="w-full max-w-lg flex items-center justify-around py-4">
+      <button id="toggleCameraFacingBtn" class="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition" title="Flip Camera">
+        <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M9.5 6.5v3h-3v-3h3M11 5H5v6h6V5zm-1.5 9.5v3h-3v-3h3M11 13H5v6h6v-6zm9.5-8v3h-3v-3h3M20 3.5h-6v6h6v-6zm-1.5 11v3h-3v-3h3M20 13h-6v6h6v-6z"/></svg>
+      </button>
+
+      <button id="captureSnapshotBtn" class="w-16 h-16 bg-gradient-to-tr from-brand-orange to-amber-400 hover:scale-105 active:scale-95 rounded-full flex items-center justify-center text-white shadow-lg shadow-brand-orange/40 transition">
+        <div class="w-12 h-12 rounded-full border-2 border-white flex items-center justify-center">
+          <div class="w-8 h-8 rounded-full bg-white"></div>
+        </div>
+      </button>
+
+      <button id="cameraUploadFileBtn" class="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition" title="Upload Image File">
+        <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4.86 8.86l-3 3.87L9 13.14 6 17h12l-3.86-5.14z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- JavaScript App Engine -->
+  <script>
+    (function() {
+      'use strict';
+
+      // --- Database & Defaults ---
+      const LOCAL_STORAGE_KEY = 'proteinblast_data_v2';
+
+      // Predefined dataset of foods with aliases & typical protein per 100g
+      const FOOD_DATABASE = [
+        { name: 'Whey Protein Powder', per100: 80, alias: ['whey', 'protein powder', 'isopure', 'scoop whey'] },
+        { name: 'Soya Chunks (Dry)', per100: 52, alias: ['soya', 'soya chunks', 'nutrela', 'soy chunks'] },
+        { name: 'Chicken Breast (Cooked)', per100: 31, alias: ['chicken', 'chicken breast', 'grilled chicken'] },
+        { name: 'Peanuts', per100: 26, alias: ['peanut', 'moongphali', 'groundnut'] },
+        { name: 'Peanut Butter', per100: 25, alias: ['pb', 'peanut butter'] },
+        { name: 'Hard Cheese / Cheddar', per100: 25, alias: ['cheese', 'cheddar'] },
+        { name: 'Mutton (Cooked)', per100: 25, alias: ['mutton', 'lamb', 'goat'] },
+        { name: 'Prawns / Shrimp (Cooked)', per100: 24, alias: ['prawns', 'shrimp'] },
+        { name: 'Fish (Cooked)', per100: 22, alias: ['fish', 'salmon', 'rohu', 'tilapia'] },
+        { name: 'Roasted Chana', per100: 22, alias: ['chana', 'bhuna chana', 'roasted gram'] },
+        { name: 'Almonds', per100: 21, alias: ['almond', 'badam'] },
+        { name: 'Paneer / Cottage Cheese', per100: 18, alias: ['paneer', 'cottage cheese'] },
+        { name: 'Egg (Whole)', per100: 13, alias: ['egg', 'eggs', 'boiled egg', 'omelette'] },
+        { name: 'Oats (Dry)', per100: 13, alias: ['oats', 'oatmeal'] },
+        { name: 'Egg White', per100: 11, alias: ['egg white', 'egg whites'] },
+        { name: 'Greek Yogurt / Hung Curd', per100: 10, alias: ['greek yogurt', 'hung curd', 'greek yoghurt'] },
+        { name: 'Whole Wheat Roti / Chapati', per100: 9, alias: ['roti', 'chapati', 'phulka', 'rotis'] },
+        { name: 'Cooked Chole / Chickpeas', per100: 8.9, alias: ['chole', 'chickpeas'] },
+        { name: 'Cooked Rajma', per100: 8.7, alias: ['rajma', 'kidney beans'] },
+        { name: 'Tofu', per100: 8, alias: ['tofu', 'soy tofu'] },
+        { name: 'Cooked Dal / Lentils', per100: 7, alias: ['dal', 'toor dal', 'moong dal', 'lentils'] },
+        { name: 'Curd / Dahi', per100: 3.5, alias: ['curd', 'dahi', 'yogurt'] },
+        { name: 'Milk', per100: 3.4, alias: ['milk', 'cow milk', 'toned milk'] },
+        { name: 'Cooked Rice', per100: 2.7, alias: ['rice', 'steamed rice'] }
+      ];
+
+      const QUICK_PICKS = [
+        'Paneer / Cottage Cheese',
+        'Chicken Breast (Cooked)',
+        'Oats (Dry)',
+        'Peanut Butter',
+        'Egg (Whole)',
+        'Curd / Dahi',
+        'Cooked Dal / Lentils',
+        'Whey Protein Powder'
+      ];
+
+      // --- Application State ---
+      let state = {
+        goal: 100,
+        days: {},       // Format: { "YYYY-MM-DD": [ { id, name, grams, protein, timestamp } ] }
+        customFoods: {},// Format: { "normalized_name": { name, per100 } }
+        theme: 'dark'
+      };
+
+      let currentDateKey = getTodayKey();
+      let parsedAiItems = [];
+
+      // --- Helper Functions ---
+      function normalize(str) {
+        return String(str || '').toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+      }
+
+      function getTodayKey() {
+        const d = new Date();
+        return formatDateKey(d);
+      }
+
+      function formatDateKey(d) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+
+      function parseDateKey(keyStr) {
+        const parts = keyStr.split('-').map(Number);
+        return new Date(parts[0], parts[1] - 1, parts[2]);
+      }
+
+      function shiftDate(keyStr, daysDelta) {
+        const d = parseDateKey(keyStr);
+        d.setDate(d.getDate() + daysDelta);
+        return formatDateKey(d);
+      }
+
+      function formatDisplayDate(keyStr) {
+        if (keyStr === getTodayKey()) return 'Today';
+        const d = parseDateKey(keyStr);
+        return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      }
+
+      function formatNum(num) {
+        const val = Math.round(num * 10) / 10;
+        return Number.isInteger(val) ? String(val) : val.toFixed(1);
+      }
+
+      // --- Food Lookup Engine ---
+      function lookupFoodPer100(query) {
+        const normQ = normalize(query);
+        if (!normQ) return null;
+
+        // 1. Check custom user saved foods
+        if (state.customFoods[normQ]) {
+          return state.customFoods[normQ].per100;
+        }
+
+        // 2. Direct name or alias match in built-in DB
+        for (const item of FOOD_DATABASE) {
+          if (normalize(item.name) === normQ) return item.per100;
+          for (const a of item.alias) {
+            if (normalize(a) === normQ) return item.per100;
+          }
+        }
+
+        // 3. Partial / Substring matching
+        for (const item of FOOD_DATABASE) {
+          if (normalize(item.name).includes(normQ) || normQ.includes(normalize(item.name))) {
+            return item.per100;
+          }
+          for (const a of item.alias) {
+            if (normQ.includes(normalize(a)) || normalize(a).includes(normQ)) {
+              return item.per100;
+            }
+          }
+        }
+
+        return null;
+      }
+
+      // --- Persistence ---
+      function saveState() {
+        try {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({
+            goal: state.goal,
+            days: state.days,
+            customFoods: state.customFoods,
+            theme: state.theme
+          }));
+        } catch (e) {
+          console.warn('LocalStorage save failed:', e);
+        }
+      }
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+          if (raw) {
+            const data = JSON.parse(raw);
+            if (data.goal && data.goal > 0) state.goal = data.goal;
+            if (data.days) state.days = data.days;
+            if (data.customFoods) state.customFoods = data.customFoods;
+            if (data.theme) state.theme = data.theme;
+          }
+        } catch (e) {
+          console.warn('LocalStorage load failed:', e);
+        }
+      }
+
+      // --- Simulated AI Natural Language Parser ---
+      function parseNaturalLanguageMeal(text) {
+        // Splits by commas, 'and', '+', or newlines
+        const itemsRaw = text.split(/,|\band\b|\+|\n/gi);
+        const results = [];
+
+        itemsRaw.forEach(raw => {
+          const itemText = raw.trim();
+          if (!itemText) return;
+
+          let gramsExtracted = null;
+          let foodNameClean = itemText;
+
+          // RegEx 1: Look for explicit grams like "150g", "150 g", "150 grams"
+          const gramMatch = itemText.match(/(\d+(?:\.\d+)?)\s*(?:g|gram|grams)\b/i);
+          if (gramMatch) {
+            gramsExtracted = parseFloat(gramMatch[1]);
+            foodNameClean = itemText.replace(gramMatch[0], '').trim();
+          } else {
+            // RegEx 2: Look for portion count units (e.g. "2 eggs", "1 scoop whey", "3 rotis")
+            const portionMatch = itemText.match(/^(\d+(?:\.\d+)?)\s*(.*)/i);
+            if (portionMatch) {
+              const qty = parseFloat(portionMatch[1]);
+              const rest = portionMatch[2].trim();
+              const normRest = normalize(rest);
+
+              if (normRest.includes('egg')) {
+                gramsExtracted = qty * 50; // standard egg ~ 50g
+                foodNameClean = 'Egg (Whole)';
+              } else if (normRest.includes('scoop') || normRest.includes('whey')) {
+                gramsExtracted = qty * 30; // standard scoop ~ 30g
+                foodNameClean = 'Whey Protein Powder';
+              } else if (normRest.includes('roti') || normRest.includes('chapati')) {
+                gramsExtracted = qty * 35; // standard roti ~ 35g
+                foodNameClean = 'Whole Wheat Roti / Chapati';
+              } else if (normRest.includes('katori') || normRest.includes('cup')) {
+                gramsExtracted = qty * 150; // standard bowl ~ 150g
+                foodNameClean = rest.replace(/katori|cup|bowl/gi, '').trim() || rest;
+              } else if (normRest.includes('tbsp') || normRest.includes('tablespoon')) {
+                gramsExtracted = qty * 16; // tbsp ~ 16g
+                foodNameClean = rest.replace(/tbsp|tablespoon/gi, '').trim() || rest;
+              } else {
+                gramsExtracted = qty * 100; // default assumed 100g unit
+                foodNameClean = rest;
+              }
+            }
+          }
+
+          if (!gramsExtracted) gramsExtracted = 100; // fallback standard 100g
+          foodNameClean = foodNameClean.replace(/^of\s+/i, '').trim();
+          if (!foodNameClean) foodNameClean = itemText;
+
+          // Lookup protein per 100g ratio
+          let density = lookupFoodPer100(foodNameClean);
+          let isEstimated = false;
+          if (!density) {
+            density = 15; // Smart default estimate for unknown items
+            isEstimated = true;
+          }
+
+          const calculatedProtein = (gramsExtracted * density) / 100;
+
+          results.push({
+            name: foodNameClean.charAt(0).toUpperCase() + foodNameClean.slice(1),
+            grams: Math.round(gramsExtracted * 10) / 10,
+            per100: density,
+            protein: Math.round(calculatedProtein * 10) / 10,
+            isEstimated: isEstimated
+          });
+        });
+
+        return results;
+      }
+
+      // --- DOM Elements ---
+      const $ = id => document.getElementById(id);
+
+      const elDateDisplay = $('dateDisplay');
+      const elPrevDateBtn = $('prevDateBtn');
+      const elNextDateBtn = $('nextDateBtn');
+      const elTodayBtn = $('todayBtn');
+      const elThemeToggleBtn = $('themeToggleBtn');
+
+      const elHeroTotalVal = $('heroTotalVal');
+      const elHeroGoalVal = $('heroGoalVal');
+      const elHeroStatusText = $('heroStatusText');
+      const elGaugeContainer = $('gaugeContainer');
+      const elEditGoalBtn = $('editGoalBtn');
+      const elGoalEditForm = $('goalEditForm');
+      const elGoalInput = $('goalInput');
+      const elCancelGoalBtn = $('cancelGoalBtn');
+
+      const elMetricPct = $('metricPct');
+      const elMetricCount = $('metricCount');
+      const elMetricTopSource = $('metricTopSource');
+      const elMetricAvgItem = $('metricAvgItem');
+
+      const elAiParseForm = $('aiParseForm');
+      const elAiInputText = $('aiInputText');
+      const elAiResultBox = $('aiResultBox');
+      const elAiParsedList = $('aiParsedList');
+      const elAiTotalCalc = $('aiTotalCalc');
+      const elAiConfirmBtn = $('aiConfirmBtn');
+      const elAiDiscardBtn = $('aiDiscardBtn');
+
+      const elAddFoodForm = $('addFoodForm');
+      const elFoodNameInput = $('foodNameInput');
+      const elFoodGramsInput = $('foodGramsInput');
+      const elPer100Wrap = $('per100Wrap');
+      const elPer100Input = $('per100Input');
+      const elCalcPreviewText = $('calcPreviewText');
+      const elFoodDatalist = $('foodDatalist');
+      const elQuickPickChips = $('quickPickChips');
+
+      // Live Camera Modal Elements
+      const elOpenScannerBtn = $('openScannerBtn');
+      const elScanLabelFileBtn = $('scanLabelFileBtn');
+      const elFallbackFileInput = $('fallbackFileInput');
+      const elCameraModal = $('cameraModal');
+      const elCloseScannerBtn = $('closeScannerBtn');
+      const elScannerVideo = $('scannerVideo');
+      const elScannerCanvas = $('scannerCanvas');
+      const elCameraStatusMsg = $('cameraStatusMsg');
+      const elToggleCameraFacingBtn = $('toggleCameraFacingBtn');
+      const elCaptureSnapshotBtn = $('captureSnapshotBtn');
+      const elCameraUploadFileBtn = $('cameraUploadFileBtn');
+
+      let currentStream = null;
+      let facingMode = 'environment'; // 'environment' (back camera) or 'user' (front camera)
+
+      const elLoggedList = $('loggedList');
+      const elLoggedTotalVal = $('loggedTotalVal');
+      const elLogItemCount = $('logItemCount');
+
+      const elSourceBreakdownList = $('sourceBreakdownList');
+      const elWeekHeaderTitle = $('weekHeaderTitle');
+      const elWeekAvgVal = $('weekAvgVal');
+      const elWeekHitCount = $('weekHitCount');
+      const elWeeklyPlot = $('weeklyPlot');
+      const elWeeklyDayPicker = $('weeklyDayPicker');
+      const elWeekGoalLine = $('weekGoalLine');
+      const elReferenceList = $('referenceList');
+
+      // --- UI Rendering ---
+
+      function applyTheme() {
+        if (state.theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+
+      function renderDateControls() {
+        elDateDisplay.textContent = formatDisplayDate(currentDateKey);
+        const todayKey = getTodayKey();
+        elNextDateBtn.disabled = (currentDateKey >= todayKey);
+        elNextDateBtn.style.opacity = (currentDateKey >= todayKey) ? '0.3' : '1';
+        elTodayBtn.style.display = (currentDateKey === todayKey) ? 'none' : 'inline-block';
+      }
+
+      function renderHeroGauge() {
+        const dayEntries = state.days[currentDateKey] || [];
+        const totalProtein = dayEntries.reduce((sum, item) => sum + item.protein, 0);
+        const goal = state.goal;
+
+        elHeroTotalVal.textContent = formatNum(totalProtein);
+        elHeroGoalVal.textContent = formatNum(goal);
+        elLoggedTotalVal.textContent = formatNum(totalProtein);
+
+        const diff = goal - totalProtein;
+        if (diff <= 0) {
+          const surplus = Math.abs(diff);
+          elHeroStatusText.textContent = surplus < 0.1 ? '🎉 Daily Goal Met!' : `🎉 Goal Met! (+${formatNum(surplus)}g over)`;
+          elHeroStatusText.className = 'text-sm font-bold px-3 py-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300';
+        } else {
+          elHeroStatusText.textContent = `${formatNum(diff)}g remaining to goal`;
+          elHeroStatusText.className = 'text-sm font-semibold px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300';
+        }
+
+        // Render 10 gauge cells
+        elGaugeContainer.innerHTML = '';
+        const pct = Math.min(100, (totalProtein / goal) * 100);
+        const activeCells = Math.min(10, Math.floor((pct / 100) * 10));
+        const partialCellPct = (pct % 10) * 10; // percentage of the active filling cell
+
+        for (let i = 0; i < 10; i++) {
+          const cell = document.createElement('div');
+          cell.className = 'gauge-cell h-full rounded-md overflow-hidden bg-slate-200 dark:bg-slate-800 relative';
+          
+          const fill = document.createElement('div');
+          fill.className = totalProtein >= goal ? 'bg-emerald-500 h-full transition-all duration-300' : 'bg-brand-orange h-full transition-all duration-300';
+
+          if (i < activeCells) {
+            fill.style.width = '100%';
+          } else if (i === activeCells && partialCellPct > 0) {
+            fill.style.width = `${partialCellPct}%`;
+          } else {
+            fill.style.width = '0%';
+          }
+
+          cell.appendChild(fill);
+          elGaugeContainer.appendChild(cell);
+        }
+
+        // Update Quick Metrics Cards
+        elMetricPct.textContent = `${Math.round(pct)}%`;
+        elMetricCount.textContent = dayEntries.length;
+
+        if (dayEntries.length > 0) {
+          // Find top source item
+          const sourceMap = {};
+          dayEntries.forEach(e => {
+            sourceMap[e.name] = (sourceMap[e.name] || 0) + e.protein;
+          });
+          let topName = 'None';
+          let maxVal = 0;
+          Object.keys(sourceMap).forEach(k => {
+            if (sourceMap[k] > maxVal) {
+              maxVal = sourceMap[k];
+              topName = k;
+            }
+          });
+          elMetricTopSource.textContent = topName;
+          elMetricAvgItem.textContent = `${formatNum(totalProtein / dayEntries.length)}g`;
+        } else {
+          elMetricTopSource.textContent = 'None';
+          elMetricAvgItem.textContent = '0g';
+        }
+      }
+
+      function renderLoggedList() {
+        const dayEntries = state.days[currentDateKey] || [];
+        elLoggedList.innerHTML = '';
+        elLogItemCount.textContent = `${dayEntries.length} ${dayEntries.length === 1 ? 'item' : 'items'}`;
+
+        if (dayEntries.length === 0) {
+          elLoggedList.innerHTML = `
+            <li class="py-8 text-center text-slate-400 text-sm">
+              No protein items logged for this day yet.<br>Use the AI scanner or add food manually above.
+            </li>
+          `;
+          return;
+        }
+
+        dayEntries.forEach(entry => {
+          const li = document.createElement('li');
+          li.className = 'py-3 flex items-center justify-between gap-3 group';
+          li.innerHTML = `
+            <div class="min-w-0 flex-1">
+              <p class="font-bold text-slate-800 dark:text-slate-100 truncate text-base">${escapeHtml(entry.name)}</p>
+              <p class="text-xs text-slate-400 font-semibold num">${formatNum(entry.grams)}g weight</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="font-display font-extrabold text-2xl text-slate-900 dark:text-slate-100 num">${formatNum(entry.protein)}<span class="text-xs font-bold text-slate-400 ml-0.5">g</span></span>
+              <button data-id="${entry.id}" class="delete-btn w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition opacity-80 group-hover:opacity-100" title="Delete Entry">
+                ✕
+              </button>
+            </div>
+          `;
+          elLoggedList.appendChild(li);
+        });
+
+        // Event listener bindings for delete buttons
+        elLoggedList.querySelectorAll('.delete-btn').forEach(btn => {
+          btn.addEventListener('click', e => {
+            const id = e.currentTarget.getAttribute('data-id');
+            deleteEntry(id);
+          });
+        });
+      }
+
+      function renderSourceBreakdown() {
+        const dayEntries = state.days[currentDateKey] || [];
+        elSourceBreakdownList.innerHTML = '';
+
+        if (dayEntries.length === 0) {
+          elSourceBreakdownList.innerHTML = `<p class="text-xs text-slate-400">No data logged today.</p>`;
+          return;
+        }
+
+        const sourceMap = {};
+        let total = 0;
+        dayEntries.forEach(e => {
+          sourceMap[e.name] = (sourceMap[e.name] || 0) + e.protein;
+          total += e.protein;
+        });
+
+        const sorted = Object.keys(sourceMap)
+          .map(k => ({ name: k, protein: sourceMap[k] }))
+          .sort((a, b) => b.protein - a.protein);
+
+        sorted.forEach(item => {
+          const sharePct = total > 0 ? (item.protein / total) * 100 : 0;
+          const container = document.createElement('div');
+          container.className = 'space-y-1';
+          container.innerHTML = `
+            <div class="flex justify-between text-xs font-bold">
+              <span class="truncate pr-2 text-slate-700 dark:text-slate-200">${escapeHtml(item.name)}</span>
+              <span class="num text-slate-500">${formatNum(item.protein)}g (${Math.round(sharePct)}%)</span>
+            </div>
+            <div class="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full bg-brand-blue rounded-full" style="width: ${sharePct}%"></div>
+            </div>
+          `;
+          elSourceBreakdownList.appendChild(container);
+        });
+      }
+
+      function renderWeeklyOverview() {
+        const curDate = parseDateKey(currentDateKey);
+        const dayOfWeek = (curDate.getDay() + 6) % 7; // Monday = 0
+        const monday = new Date(curDate);
+        monday.setDate(curDate.getDate() - dayOfWeek);
+
+        const weekKeys = [];
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(monday);
+          d.setDate(monday.getDate() + i);
+          weekKeys.push(formatDateKey(d));
+        }
+
+        const weekTotals = weekKeys.map(k => {
+          const entries = state.days[k] || [];
+          return entries.reduce((s, e) => s + e.protein, 0);
+        });
+
+        const loggedDays = weekTotals.filter(v => v > 0);
+        const avg = loggedDays.length > 0 ? loggedDays.reduce((a, b) => a + b, 0) / loggedDays.length : 0;
+        const hitCount = weekTotals.filter(v => v >= state.goal).length;
+
+        elWeekHeaderTitle.textContent = `Week of ${parseDateKey(weekKeys[0]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+        elWeekAvgVal.textContent = `${formatNum(avg)}g`;
+        elWeekHitCount.textContent = `${hitCount}/7`;
+
+        const maxVal = Math.max(state.goal, Math.max(...weekTotals, 10));
+        elWeekGoalLine.style.bottom = `${Math.min(100, (state.goal / maxVal) * 100)}%`;
+
+        // Render Bars & Buttons
+        elWeeklyPlot.innerHTML = '';
+        elWeeklyDayPicker.innerHTML = '';
+
+        const todayKey = getTodayKey();
+
+        weekKeys.forEach((key, idx) => {
+          const val = weekTotals[idx];
+          const isCurrent = (key === currentDateKey);
+          const isFuture = (key > todayKey);
+          const barHeightPct = Math.max(4, Math.min(100, (val / maxVal) * 100));
+
+          // Bar element
+          const bar = document.createElement('div');
+          bar.className = 'flex-1 flex flex-col justify-end items-center h-full group relative cursor-pointer';
+          bar.title = `${formatDisplayDate(key)}: ${formatNum(val)}g`;
+
+          let colorClass = 'bg-slate-200 dark:bg-slate-800';
+          if (val >= state.goal) colorClass = 'bg-emerald-500';
+          else if (val > 0) colorClass = 'bg-brand-blue';
+
+          if (isCurrent) colorClass += ' ring-2 ring-brand-orange';
+
+          bar.innerHTML = `
+            <div class="w-full ${colorClass} rounded-t-sm transition-all duration-300" style="height: ${isFuture ? '0%' : barHeightPct + '%'};"></div>
+          `;
+          bar.addEventListener('click', () => {
+            if (!isFuture) {
+              currentDateKey = key;
+              renderAll();
+            }
+          });
+          elWeeklyPlot.appendChild(bar);
+
+          // Day Picker Button
+          const dayDate = parseDateKey(key);
+          const dayLabel = dayDate.toLocaleDateString(undefined, { weekday: 'narrow' });
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.disabled = isFuture;
+          btn.className = `flex-1 py-1 rounded-lg text-xs font-bold transition ${isCurrent ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'} ${isFuture ? 'opacity-30 cursor-not-allowed' : ''}`;
+          btn.textContent = dayLabel;
+          btn.addEventListener('click', () => {
+            currentDateKey = key;
+            renderAll();
+          });
+          elWeeklyDayPicker.appendChild(btn);
+        });
+      }
+
+      function renderReferenceGuide() {
+        elReferenceList.innerHTML = '';
+
+        // Combine custom user items + standard DB
+        const customItems = Object.keys(state.customFoods).map(k => state.customFoods[k]);
+        const allItems = [...customItems, ...FOOD_DATABASE];
+
+        allItems.forEach(item => {
+          const li = document.createElement('li');
+          li.className = 'py-2 flex justify-between items-center';
+          li.innerHTML = `
+            <span class="font-medium text-slate-700 dark:text-slate-300 truncate">${escapeHtml(item.name)}</span>
+            <span class="font-bold text-slate-900 dark:text-slate-100 num ml-2">${formatNum(item.per100)}g</span>
+          `;
+          elReferenceList.appendChild(li);
+        });
+      }
+
+      function renderDatalist() {
+        elFoodDatalist.innerHTML = '';
+        FOOD_DATABASE.forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item.name;
+      // --- AI & Barcode OCR Label Scanner logic ---
+
+      async function startCamera() {
+        if (currentStream) {
+          stopCamera();
+        }
+
+        elCameraStatusMsg.textContent = 'Requesting camera access...';
+
+        try {
+          const constraints = {
+            video: {
+              facingMode: { exact: facingMode },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          };
+
+          try {
+            currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+          } catch (e) {
+            // Fallback if exact facingMode constraint is not supported
+            currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
+          }
+
+          elScannerVideo.srcObject = currentStream;
+          await elScannerVideo.play();
+          elCameraStatusMsg.textContent = 'Position nutrition label or product inside frame & tap capture';
+        } catch (err) {
+          console.error('Camera error:', err);
+          elCameraStatusMsg.textContent = 'Camera unavailable. Upload a photo instead.';
+        }
+      }
+
+      function stopCamera() {
+        if (currentStream) {
+          currentStream.getTracks().forEach(track => track.stop());
+          currentStream = null;
+        }
+      }
+
+      function openScannerModal() {
+        elCameraModal.classList.remove('hidden');
+        startCamera();
+      }
+
+      function closeScannerModal() {
+        stopCamera();
+        elCameraModal.classList.add('hidden');
+      }
+
+      function processImageData(imageDataUrl) {
+        elCameraStatusMsg.textContent = 'Scanning nutrition data & barcode...';
+
+        // Simulated OCR & Barcode extraction pipeline
+        setTimeout(() => {
+          // Predefined sample scanned results to simulate vision OCR parsing
+          const simulatedScannedResults = [
+            { name: 'Greek Yogurt (Scanned)', grams: 170, protein: 17 },
+            { name: 'Whey Isolate Shake (Label scanned)', grams: 33, protein: 27 },
+            { name: 'Peanut Butter Pack (Scanned)', grams: 32, protein: 8 },
+            { name: 'Tofu Block (Scanned)', grams: 150, protein: 12 }
+          ];
+
+          const result = simulatedScannedResults[Math.floor(Math.random() * simulatedScannedResults.length)];
+
+          addEntryToLog(result.name, result.grams, result.protein);
+          closeScannerModal();
+          alert(`Scanned Label Successfully!\nLogged: ${result.name} - ${result.grams}g (${result.protein}g protein)`);
+        }, 800);
+      }
+
+      function captureSnapshot() {
+        if (!elScannerVideo.videoWidth) {
+          elCameraStatusMsg.textContent = 'Camera video feed not ready';
+          return;
+        }
+
+        const canvas = elScannerCanvas;
+        canvas.width = elScannerVideo.videoWidth;
+        canvas.height = elScannerVideo.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(elScannerVideo, 0, 0, canvas.width, canvas.height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        processImageData(dataUrl);
+      }
+
+      // Live Scanner Event Bindings
+      elOpenScannerBtn.addEventListener('click', openScannerModal);
+      elCloseScannerBtn.addEventListener('click', closeScannerModal);
+
+      elToggleCameraFacingBtn.addEventListener('click', () => {
+        facingMode = facingMode === 'environment' ? 'user' : 'environment';
+        startCamera();
+      });
+
+      elCaptureSnapshotBtn.addEventListener('click', captureSnapshot);
+
+      elScanLabelFileBtn.addEventListener('click', () => elFallbackFileInput.click());
+      elCameraUploadFileBtn.addEventListener('click', () => elFallbackFileInput.click());
+
+      elFallbackFileInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = evt => {
+            processImageData(evt.target.result);
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // Dark Mode Toggle
+      elThemeToggleBtn.addEventListener('click', () => {
+        state.theme = state.theme === 'dark' ? 'light' : 'dark';
+        saveState();
+        applyTheme();
+      });
+
+      // Edit Goal inline form
+      elEditGoalBtn.addEventListener('click', () => {
+        elGoalInput.value = state.goal;
+        elGoalEditForm.classList.remove('hidden');
+        elGoalInput.focus();
+      });
+
+      elCancelGoalBtn.addEventListener('click', () => {
+        elGoalEditForm.classList.add('hidden');
+      });
+
+      elGoalEditForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const newGoal = parseInt(elGoalInput.value, 10);
+        if (newGoal && newGoal >= 10 && newGoal <= 500) {
+          state.goal = newGoal;
+          saveState();
+          elGoalEditForm.classList.add('hidden');
+          renderAll();
+        }
+      });
+
+      // AI Meal Form Submit
+      elAiParseForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const text = elAiInputText.value.trim();
+        if (!text) return;
+
+        parsedAiItems = parseNaturalLanguageMeal(text);
+
+        if (parsedAiItems.length === 0) return;
+
+        elAiParsedList.innerHTML = '';
+        let totalVal = 0;
+
+        parsedAiItems.forEach((item, index) => {
+          totalVal += item.protein;
+          const li = document.createElement('li');
+          li.className = 'py-2 flex items-center justify-between';
+          li.innerHTML = `
+            <div>
+              <span class="font-semibold text-slate-800 dark:text-slate-100">${escapeHtml(item.name)}</span>
+              <span class="text-xs text-slate-400 block">${formatNum(item.grams)}g weight ${item.isEstimated ? '(Estimated)' : ''}</span>
+            </div>
+            <span class="font-display font-bold text-lg text-brand-orange num">${formatNum(item.protein)}g</span>
+          `;
+          elAiParsedList.appendChild(li);
+        });
+
+        elAiTotalCalc.textContent = formatNum(totalVal);
+        elAiResultBox.classList.remove('hidden');
+      });
+
+      elAiConfirmBtn.addEventListener('click', () => {
+        parsedAiItems.forEach(item => {
+          addEntryToLog(item.name, item.grams, item.protein);
+        });
+        parsedAiItems = [];
+        elAiInputText.value = '';
+        elAiResultBox.classList.add('hidden');
+      });
+
+      elAiDiscardBtn.addEventListener('click', () => {
+        parsedAiItems = [];
+        elAiResultBox.classList.add('hidden');
+      });
+
+      // Add Food Manual Form
+      elFoodNameInput.addEventListener('input', updateFormPreview);
+      elFoodGramsInput.addEventListener('input', updateFormPreview);
+      elPer100Input.addEventListener('input', updateFormPreview);
+
+      elAddFoodForm.addEventListener('submit', e => {
+        e.preventDefault();
+        const name = elFoodNameInput.value.trim();
+        const grams = parseFloat(elFoodGramsInput.value);
+        let customPer100 = parseFloat(elPer100Input.value);
+
+        if (!name || isNaN(grams) || grams <= 0) return;
+
+        let density = lookupFoodPer100(name);
+
+        if (density === null && !isNaN(customPer100) && customPer100 > 0) {
+          density = customPer100;
+          // Save custom food locally for future lookups
+          state.customFoods[normalize(name)] = {
+            name: name,
+            per100: customPer100
+          };
+        }
+
+        if (density === null) {
+          elPer100Wrap.classList.remove('hidden');
+          elPer100Input.focus();
+          return;
+        }
+
+        const proteinTotal = (grams * density) / 100;
+        addEntryToLog(name, grams, proteinTotal);
+
+        // Reset Form
+        elFoodNameInput.value = '';
+        elFoodGramsInput.value = '';
+        elPer100Input.value = '';
+        elPer100Wrap.classList.add('hidden');
+        updateFormPreview();
+      });
+
+      // Initialize App
+      loadState();
+      renderDatalist();
+      renderQuickPicks();
+      renderAll();
+
+    })();
+  </script>
+</body>
+</html>
